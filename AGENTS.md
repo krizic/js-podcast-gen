@@ -250,7 +250,114 @@ Before submitting any code changes:
 - Include cleanup instructions
 - Organized by type and purpose
 
-## 🔄 Migration Strategy
+## � Documentation Maintenance Requirements
+
+**CRITICAL: When making ANY changes to the solution architecture, functionality, or APIs, the following documentation MUST be updated:**
+
+### 🔄 Documentation Update Checklist
+
+#### README.md Updates Required When:
+- [ ] **New CLI parameters or commands added** - Update usage examples and parameter documentation
+- [ ] **New features implemented** - Add feature descriptions, examples, and usage instructions
+- [ ] **Configuration changes** - Update environment variable documentation and setup instructions
+- [ ] **Dependencies changed** - Update installation requirements and setup scripts
+- [ ] **Performance improvements** - Document new benchmarks and optimization details
+- [ ] **API modifications** - Update interface examples and method signatures
+- [ ] **Breaking changes** - Add migration guide and compatibility notes
+
+#### ARCHITECTURE.md Updates Required When:
+- [ ] **Service layer modifications** - Update service diagrams and interaction flows
+- [ ] **New design patterns implemented** - Document pattern usage and implementation details
+- [ ] **Interface changes** - Update UML diagrams and contract specifications
+- [ ] **Data flow modifications** - Refresh sequence diagrams and processing pipelines
+- [ ] **Configuration system changes** - Update configuration hierarchy and resolution flows
+- [ ] **Error handling changes** - Document new error strategies and recovery mechanisms
+- [ ] **Performance architecture updates** - Update acceleration pipelines and optimization flows
+- [ ] **Scalability changes** - Modify distributed architecture planning and scaling strategies
+
+### 🎯 Documentation Maintenance Workflow
+
+#### Before Making Changes:
+1. **Review current documentation** - Understand existing architectural documentation
+2. **Identify affected areas** - Determine which diagrams and sections will need updates
+3. **Plan documentation updates** - Create checklist of required documentation changes
+
+#### During Implementation:
+1. **Update inline comments** - Ensure code comments reflect new functionality
+2. **Update JSDoc annotations** - Maintain comprehensive API documentation
+3. **Note breaking changes** - Document any compatibility impacts
+
+#### After Implementation:
+1. **Update README.md immediately** - Refresh usage examples and feature descriptions
+2. **Update ARCHITECTURE.md diagrams** - Regenerate Mermaid diagrams reflecting new architecture
+3. **Update service interaction flows** - Refresh sequence diagrams and data flow documentation
+4. **Validate examples work** - Test all documented code examples and CLI usage
+5. **Review for completeness** - Ensure all user-facing changes are documented
+
+### 📋 Documentation Quality Standards
+
+#### README.md Standards:
+- **Executable examples** - All code examples must be copy-paste ready and tested
+- **Current parameter lists** - CLI help output must match documented parameters
+- **Working links** - All internal and external links must be valid
+- **Version compatibility** - Document supported Node.js, Python, and system versions
+- **Troubleshooting updates** - Add solutions for new potential issues
+
+#### ARCHITECTURE.md Standards:
+- **Accurate diagrams** - Mermaid diagrams must reflect actual implementation
+- **Complete service flows** - All service interactions must be documented
+- **Interface contracts** - TypeScript interfaces must match documented contracts
+- **Performance metrics** - Benchmark data must be current and accurate
+- **Scalability considerations** - Future architecture planning must be realistic
+
+### ⚠️ Documentation Debt Prevention
+
+#### Common Documentation Debt Scenarios:
+- **New CLI parameters** added without updating README usage examples
+- **Service interfaces modified** without updating ARCHITECTURE.md diagrams
+- **Configuration options added** without updating setup documentation
+- **Performance optimizations implemented** without updating benchmark data
+- **Error handling improved** without updating troubleshooting guides
+
+#### Prevention Strategies:
+1. **Documentation-first development** - Update docs before implementing features
+2. **Automated validation** - Use tools to verify documentation accuracy
+3. **Regular documentation reviews** - Schedule periodic documentation audits
+4. **Change impact analysis** - Always consider documentation impact of code changes
+
+### 🔧 Agentic Development Documentation Protocol
+
+#### When AI Assistants Make Changes:
+1. **Immediately update affected documentation** - Don't defer documentation updates
+2. **Regenerate diagrams** - Update Mermaid diagrams to reflect new architecture
+3. **Test all examples** - Verify documented code examples still work
+4. **Update performance data** - Refresh benchmark information if relevant
+5. **Document new patterns** - Add architectural patterns used in implementation
+
+#### Documentation Update Priority:
+- **🔴 CRITICAL**: User-facing API changes, CLI parameters, breaking changes
+- **🟠 HIGH**: New features, configuration options, service modifications  
+- **🟡 MEDIUM**: Performance improvements, error handling enhancements
+- **🟢 LOW**: Internal refactoring, code organization improvements
+
+### 📖 Documentation Tools and Standards
+
+#### Mermaid Diagram Requirements:
+- **Consistent styling** - Use established color schemes and node shapes
+- **Logical grouping** - Group related components in subgraphs
+- **Clear relationships** - Show dependencies and data flows accurately
+- **Readable labels** - Use descriptive, concise component names
+- **Updated flows** - Ensure sequence diagrams match actual service calls
+
+#### Code Example Standards:
+- **Complete examples** - Show full command-line invocations with all required parameters
+- **Error handling** - Include examples of error scenarios and solutions
+- **Real outputs** - Use actual command outputs, not placeholder text
+- **Cross-platform compatibility** - Document platform-specific considerations
+
+**Remember: Documentation is CODE. Treat it with the same rigor as implementation code. Outdated documentation is worse than no documentation.**
+
+## �🔄 Migration Strategy
 
 When encountering existing temporary files in root:
 

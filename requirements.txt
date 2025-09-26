@@ -1,0 +1,12 @@
+# Core dependencies with more flexible versioning for Python 3.13
+fastapi>=0.100.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+python-multipart
+
+# For Apple Silicon Macs - install PyTorch first
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# Note: chatterbox-tts may need to be installed separately or may not be compatible with Python 3.13
+# We'll provide an alternative TTS solution

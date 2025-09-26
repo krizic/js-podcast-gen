@@ -1,9 +1,11 @@
 import { TTSService } from '../services/tts/TTSService.js';
 import { LLMService } from '../services/llm/LLMService.js';
 import { AudioService } from '../services/audio/AudioService.js';
+import { VideoService } from '../services/video/VideoService.js';
 import { ChatterboxProvider } from '../services/tts/ChatterboxProvider.js';
 import { OllamaProvider } from '../services/llm/OllamaProvider.js';
 import { FFmpegConcatenator } from '../services/audio/FFmpegConcatenator.js';
+import { FFmpegVideoProcessor } from '../services/video/FFmpegVideoProcessor.js';
 import { ILogger } from '../interfaces/ILogger.js';
 import { ConfigUtils } from '../utilities/configUtils.js';
 
@@ -42,5 +44,13 @@ export class ServiceFactory {
   createAudioService(): AudioService {
     const audioProcessor = new FFmpegConcatenator(this.logger);
     return new AudioService(audioProcessor, this.logger);
+  }
+
+  /**
+   * Create Video Service
+   */
+  createVideoService(): VideoService {
+    const videoProcessor = new FFmpegVideoProcessor(this.logger);
+    return new VideoService(videoProcessor, this.logger);
   }
 }

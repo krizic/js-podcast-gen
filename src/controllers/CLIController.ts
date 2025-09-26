@@ -38,13 +38,18 @@ export class CLIController {
       .option('-v, --voice <preset>', 'Voice preset (default, masculine, deep_male, professional, feminine)', 'masculine')
       .option('-y, --auto-approve', 'Auto-approve generated script without confirmation', false)
       .option('--ollama-url <url>', 'Ollama server URL (default: http://localhost:11434)')
-      .option('--ollama-model <model>', 'Ollama model name (default: llama3.2:3b)')
-      .option('--podcast-prompt <prompt>', 'Custom podcast prompt template (use {INPUT_TEXT} as placeholder)')
+      .option('--ollama-model <model>', 'Ollama model name (default: gpt-oss:latest)')
+      .option('--podcast-prompt <prompt>', 'Custom podcast prompt template')
       .option('--exaggeration <level>', 'Voice exaggeration level (0.0-1.0)', parseFloat, 0.3)
       .option('--cfg-scale <scale>', 'CFG scale for voice generation (0.0-1.0)', parseFloat, 0.4)
       .option('--temperature <temp>', 'Voice temperature for randomness (0.0-1.0)', parseFloat)
       .option('--top-p <p>', 'Top-p sampling for voice (0.0-1.0)', parseFloat)
       .option('--top-k <k>', 'Top-k sampling for voice (integer)', parseInt)
+      .option('--video', 'Generate video output in addition to audio', false)
+      .option('--image <path>', 'Path to static image file for video generation (required if --video is used)')
+      .option('--video-output <path>', 'Path to output video file (defaults to audio path with .mp4 extension)')
+      .option('--aspect-ratio <ratio>', 'Video aspect ratio: 16:9, 4:3, 1:1, 9:16 (default: 16:9)', '16:9')
+      .option('--video-quality <quality>', 'Video quality: low, medium, high, ultra (default: medium)', 'medium')
       .action(async (options) => {
         await this.handleGenerateCommand(options);
       });
@@ -73,6 +78,18 @@ export class CLIController {
    */
   private async handleGenerateCommand(options: any): Promise<void> {
     try {
+      // Validate video options
+      if (options.video && !options.image) {
+        throw new Error('--image option is required when --video is specified');
+      }
+
+      // Build video output path if not specified
+      let videoOutputPath = options.videoOutput;
+      if (options.video && !videoOutputPath) {
+        const audioExt = options.output.split('.').pop();
+        videoOutputPath = options.output.replace(`.${audioExt}`, '.mp4');
+      }
+
       // Build podcast options from CLI arguments
       const podcastOptions: PodcastOptions = {
         inputFile: options.file,
@@ -87,6 +104,12 @@ export class CLIController {
         temperature: options.temperature,
         topP: options.topP,
         topK: options.topK,
+        // Video options
+        generateVideo: options.video,
+        imagePath: options.image,
+        videoOutputPath: videoOutputPath,
+        aspectRatio: options.aspectRatio,
+        videoQuality: options.videoQuality,
       };
 
       // Generate podcast

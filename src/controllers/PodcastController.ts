@@ -2,6 +2,7 @@ import { PodcastOptions } from '../interfaces/types.js';
 import { TTSService } from '../services/tts/TTSService.js';
 import { LLMService } from '../services/llm/LLMService.js';
 import { AudioService } from '../services/audio/AudioService.js';
+import { VideoService } from '../services/video/VideoService.js';
 import { ILogger } from '../interfaces/ILogger.js';
 import { FileUtils } from '../utilities/fileUtils.js';
 import { ValidationUtils } from '../utilities/validationUtils.js';
@@ -85,6 +86,22 @@ export class PodcastController {
       await audioService.combineAudioBuffers(audioBuffers, options.outputFile);
 
       this.logger.info(`✅ Podcast saved to ${options.outputFile}`);
+
+      // 7. Generate video if requested
+      if (options.generateVideo && options.imagePath && options.videoOutputPath) {
+        this.logger.info('Generating video output...');
+        const videoService = this.serviceFactory.createVideoService();
+        
+        await videoService.generateVideo(
+          options.imagePath,
+          options.outputFile,
+          options.videoOutputPath,
+          options.aspectRatio || '16:9',
+          options.videoQuality || 'medium'
+        );
+        
+        this.logger.info(`✅ Video saved to ${options.videoOutputPath}`);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error('Podcast generation failed', errorMessage);
@@ -126,6 +143,51 @@ export class PodcastController {
     for (const validation of numericValidations) {
       if (!validation.isValid) {
         throw new Error(`Parameter validation failed: ${validation.error}`);
+      }
+    }
+
+    // Validate video options if video generation is requested
+    if (options.generateVideo) {
+      if (!options.imagePath) {
+        throw new Error('Image path is required for video generation');
+      }
+
+      if (!options.videoOutputPath) {
+        throw new Error('Video output path is required for video generation');
+      }
+
+      // Create video service for validation
+      const videoService = this.serviceFactory.createVideoService();
+      
+      // Check if video processor is available
+      const isVideoAvailable = await videoService.checkAvailability();
+      if (!isVideoAvailable) {
+        throw new Error('Video processor (FFmpeg) is not available. Please install FFmpeg.');
+      }
+
+      // Validate aspect ratio
+      const availableAspectRatios = videoService.getAvailableAspectRatios();
+      if (options.aspectRatio && !availableAspectRatios.includes(options.aspectRatio)) {
+        throw new Error(`Invalid aspect ratio: ${options.aspectRatio}. Available: ${availableAspectRatios.join(', ')}`);
+      }
+
+      // Validate video quality
+      const availableQualities = videoService.getAvailableQualityLevels();
+      if (options.videoQuality && !availableQualities.includes(options.videoQuality)) {
+        throw new Error(`Invalid video quality: ${options.videoQuality}. Available: ${availableQualities.join(', ')}`);
+      }
+
+      // Validate image file exists and is supported format
+      const imageExists = await FileUtils.fileExists(options.imagePath);
+      if (!imageExists) {
+        throw new Error(`Image file not found: ${options.imagePath}`);
+      }
+      
+      // Validate video output format
+      const supportedFormats = videoService.getSupportedFormats();
+      const videoExt = options.videoOutputPath.toLowerCase().split('.').pop();
+      if (!supportedFormats.includes(`.${videoExt}`)) {
+        throw new Error(`Unsupported video format: .${videoExt}. Supported: ${supportedFormats.join(', ')}`);
       }
     }
 

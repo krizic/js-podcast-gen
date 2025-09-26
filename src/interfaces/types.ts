@@ -30,6 +30,12 @@ export interface PodcastOptions {
   ollamaModel?: string;
   podcastPrompt?: string;
   autoApprove?: boolean;
+  // Video generation options
+  generateVideo?: boolean;
+  imagePath?: string;
+  videoOutputPath?: string;
+  aspectRatio?: string;
+  videoQuality?: string;
 }
 
 export interface HealthStatus {

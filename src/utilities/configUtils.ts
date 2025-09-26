@@ -18,7 +18,7 @@ export class ConfigUtils {
    */
   static getOllamaConfig(customUrl?: string, customModel?: string): { host: string; model: string } {
     return {
-      host: customUrl || process.env.OLLAMA_HOST || 'http://10.69.1.200:11434',
+      host: customUrl || process.env.OLLAMA_HOST || 'http://localhost:11434',
       model: customModel || process.env.OLLAMA_MODEL || 'gpt-oss:latest'
     };
   }
@@ -113,7 +113,8 @@ export class ConfigUtils {
 4. Include a concluding summary that wraps up the key points
 5. Use punctuation carefully for natural speech synthesis
 6. Avoid annotations, stage directions, or text that shouldn't be spoken
-7. Maintain an informative yet conversational tone throughout
+7. Maintain an informative yet conversational tone throughout.
+8. Avoid formatting, special characters, or markdown.
 
 The output should be ready for direct text-to-speech conversion.`;
   }

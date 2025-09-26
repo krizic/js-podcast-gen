@@ -11,6 +11,11 @@ export interface ILLMProvider {
   generate(prompt: string, model?: string): Promise<string>;
 
   /**
+   * Generate content with system and user prompts (preferred method)
+   */
+  generateWithSystemPrompt(systemPrompt: string, userPrompt: string, model?: string): Promise<string>;
+
+  /**
    * Check if the LLM service is available
    */
   isAvailable(): Promise<boolean>;

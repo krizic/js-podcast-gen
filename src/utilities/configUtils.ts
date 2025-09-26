@@ -102,7 +102,24 @@ export class ConfigUtils {
   }
 
   /**
-   * Get default podcast prompt template
+   * Get default podcast system prompt (instructions for the LLM)
+   */
+  static getDefaultPodcastSystemPrompt(): string {
+    return `You are a professional podcast host. Your task is to convert text content into an engaging podcast script. Follow these guidelines:
+
+1. Add a brief, engaging introduction that sets up the topic
+2. Transform the content into conversational, spoken language
+3. Add natural transitions between topics
+4. Include a concluding summary that wraps up the key points
+5. Use punctuation carefully for natural speech synthesis
+6. Avoid annotations, stage directions, or text that shouldn't be spoken
+7. Maintain an informative yet conversational tone throughout
+
+The output should be ready for direct text-to-speech conversion.`;
+  }
+
+  /**
+   * Get default podcast prompt template (legacy method for backward compatibility)
    */
   static getDefaultPodcastPrompt(): string {
     return `You are a podcast host. Your task is to convert the following text into an engaging podcast script. Add a brief introduction and a concluding summary. The tone should be conversational and informative. Do not add annotations since everything you output will be directly read by speech synthesis. Punctuation is very important for natural speech. Here is the text:
@@ -113,7 +130,22 @@ export class ConfigUtils {
   }
 
   /**
-   * Build podcast prompt with input text
+   * Get system prompt for podcast generation
+   */
+  static getPodcastSystemPrompt(customPrompt?: string): string {
+    if (customPrompt) {
+      // If custom prompt contains {INPUT_TEXT}, it's a legacy format, extract system part
+      if (customPrompt.includes('{INPUT_TEXT}')) {
+        return customPrompt.split('{INPUT_TEXT}')[0].trim();
+      }
+      // Otherwise, use as system prompt directly
+      return customPrompt;
+    }
+    return this.getDefaultPodcastSystemPrompt();
+  }
+
+  /**
+   * Build podcast prompt with input text (legacy method for backward compatibility)
    */
   static buildPodcastPrompt(inputText: string, customPrompt?: string): string {
     const prompt = customPrompt || this.getDefaultPodcastPrompt();

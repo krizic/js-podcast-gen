@@ -58,6 +58,59 @@ export class OllamaProvider implements ILLMProvider {
     }
   }
 
+  /**
+   * Generate content with system and user prompts (preferred method)
+   */
+  async generateWithSystemPrompt(systemPrompt: string, userPrompt: string, model?: string): Promise<string> {
+    const modelToUse = model || this.defaultModel;
+    
+    try {
+      this.logger.debug(`Generating content with system/user prompts using model ${modelToUse}`, { 
+        systemPromptLength: systemPrompt.length,
+        userPromptLength: userPrompt.length 
+      });
+
+      const response = await this.client.chat({
+        model: modelToUse,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user', 
+            content: userPrompt
+          }
+        ]
+      });
+
+      if (!response.message?.content) {
+        throw new LLMError(
+          'No response received from Ollama chat',
+          'NO_RESPONSE'
+        );
+      }
+
+      this.logger.debug('LLM generation with system prompt completed', { 
+        responseLength: response.message.content.length 
+      });
+
+      return response.message.content;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('LLM generation failed', errorMessage);
+      
+      if (error instanceof LLMError) {
+        throw error;
+      }
+      
+      throw new LLMError(
+        `Failed to generate content with Ollama: ${errorMessage}`,
+        'GENERATION_ERROR'
+      );
+    }
+  }
+
   async isAvailable(): Promise<boolean> {
     try {
       // Try to list models to check if Ollama is available

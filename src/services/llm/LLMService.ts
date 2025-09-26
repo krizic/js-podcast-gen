@@ -45,10 +45,12 @@ export class LLMService {
 
     this.logger.info('Generating podcast script with LLM');
 
-    const prompt = ConfigUtils.buildPodcastPrompt(inputText, customPrompt);
+    // Use system/user prompt approach for better prompt engineering
+    const systemPrompt = ConfigUtils.getPodcastSystemPrompt(customPrompt);
+    const userPrompt = inputText; // User prompt is just the raw content from the file
     
     try {
-      const script = await this.provider.generate(prompt, model);
+      const script = await this.provider.generateWithSystemPrompt(systemPrompt, userPrompt, model);
       
       this.logger.info(`Podcast script generated (${script.length} characters)`);
       

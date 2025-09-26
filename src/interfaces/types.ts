@@ -29,6 +29,7 @@ export interface PodcastOptions {
   ollamaUrl?: string;
   ollamaModel?: string;
   podcastPrompt?: string;
+  autoApprove?: boolean;
 }
 
 export interface HealthStatus {

@@ -36,6 +36,7 @@ export class CLIController {
       .requiredOption('-f, --file <path>', 'Path to the input text file.')
       .requiredOption('-o, --output <path>', 'Path to the output MP3 file.')
       .option('-v, --voice <preset>', 'Voice preset (default, masculine, deep_male, professional, feminine)', 'masculine')
+      .option('-y, --auto-approve', 'Auto-approve generated script without confirmation', false)
       .option('--ollama-url <url>', 'Ollama server URL (default: http://localhost:11434)')
       .option('--ollama-model <model>', 'Ollama model name (default: llama3.2:3b)')
       .option('--podcast-prompt <prompt>', 'Custom podcast prompt template (use {INPUT_TEXT} as placeholder)')
@@ -77,6 +78,7 @@ export class CLIController {
         inputFile: options.file,
         outputFile: options.output,
         voice: options.voice,
+        autoApprove: options.autoApprove,
         ollamaUrl: options.ollamaUrl,
         ollamaModel: options.ollamaModel,
         podcastPrompt: options.podcastPrompt,

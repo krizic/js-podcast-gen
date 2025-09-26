@@ -58,6 +58,14 @@ node dist/index.js generate \
 
 ### 🤖 **AI Integration**
 - **Ollama LLM** - Intelligent podcast script generation
+- **System/User Prompts** - Proper LLM prompt engineering for better results
+- **Configurable Models** - Custom Ollama URL and model selection
+
+### 👤 **User Experience**
+- **Interactive Confirmation** - Preview generated script before synthesis
+- **Auto-Approval Mode** - Skip confirmation with `-y` flag for automation
+- **Progress Feedback** - Clear status updates throughout the process
+- **Graceful Cancellation** - Easy exit at script approval stage
 - **Local Processing** - Privacy-focused, no external API calls
 - **Flexible Models** - Support for various Ollama models
 - **Smart Prompting** - Optimized prompts for natural speech
@@ -169,6 +177,20 @@ node dist/index.js generate \
   --temperature 0.1 \
   --exaggeration 0.2 \
   --cfg-scale 0.3
+
+# Interactive script confirmation (default behavior)
+node dist/index.js generate -f input.txt -o output.mp3
+
+# Auto-approve script without confirmation
+node dist/index.js generate -f input.txt -o output.mp3 -y
+
+# Custom LLM configuration with confirmation
+node dist/index.js generate \
+  -f content.txt \
+  -o podcast.mp3 \
+  --ollama-url "http://remote:11434" \
+  --ollama-model "llama3.1:8b" \
+  --podcast-prompt "Create an engaging tech podcast segment"
 ```
 
 #### Convenience Scripts
@@ -737,6 +759,30 @@ print(f'PyTorch: {data[\"pytorch_version\"]}')
 "
 ```
 
-## License
+## 📄 License
 
-This project is licensed under the ISC License.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+### 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+1. **Fork the repository** on GitHub
+2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)  
+3. **Make your changes** following our coding standards in [AGENTS.md](AGENTS.md)
+4. **Update documentation** (README.md, ARCHITECTURE.md) as needed
+5. **Test thoroughly** including voice presets and Apple Silicon compatibility
+6. **Commit with clear messages** (`git commit -m 'Add amazing feature'`)
+7. **Push to your branch** (`git push origin feature/amazing-feature`)
+8. **Open a Pull Request** with detailed description
+
+### 📝 License Summary
+
+- ✅ **Free to use** for personal and commercial projects
+- ✅ **Fork and modify** as needed for your use case  
+- ✅ **Distribute and sell** derivative works
+- ⚠️ **Attribution required** - include copyright notice and license
+- ⚠️ **Reference this repository** when using or distributing
+- ❌ **No warranty** - use at your own risk
+
+**Perfect for:** Open source projects, commercial applications, educational use, research, and development.

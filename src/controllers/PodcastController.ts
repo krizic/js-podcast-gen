@@ -6,6 +6,7 @@ import { ILogger } from '../interfaces/ILogger.js';
 import { FileUtils } from '../utilities/fileUtils.js';
 import { ValidationUtils } from '../utilities/validationUtils.js';
 import { ConfigUtils } from '../utilities/configUtils.js';
+import { InteractionUtils } from '../utilities/interactionUtils.js';
 import { ServiceFactory } from '../factories/ServiceFactory.js';
 
 /**
@@ -61,14 +62,25 @@ export class PodcastController {
       );
       this.logger.info(`Script generated: ${script.length} characters`);
 
-      // 3. Check service availability
+      // 3. User confirmation (unless auto-approved)
+      if (options.autoApprove) {
+        InteractionUtils.displayAutoApproval(script);
+      } else {
+        const userApproved = await InteractionUtils.confirmScriptGeneration(script);
+        if (!userApproved) {
+          InteractionUtils.displayCancellation();
+          return;
+        }
+      }
+
+      // 4. Check service availability
       await this.checkServiceAvailability(ttsService, llmService, audioService);
 
-      // 4. Convert script to speech
+      // 5. Convert script to speech
       this.logger.info('Converting script to speech...');
       const audioBuffers = await this.convertScriptToAudio(script, voiceConfig, ttsService);
 
-      // 5. Combine audio segments
+      // 6. Combine audio segments
       this.logger.info('Combining audio segments...');
       await audioService.combineAudioBuffers(audioBuffers, options.outputFile);
 

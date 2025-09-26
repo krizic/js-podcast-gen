@@ -1,3 +1,7 @@
 node_modules
 chatterbox_env
 dist
+tmp/**
+!tmp/.gitkeep
+__pycache__
+*.mp3

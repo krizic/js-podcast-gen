@@ -4,9 +4,18 @@ uvicorn[standard]>=0.24.0
 pydantic>=2.0.0
 python-multipart
 
+# Pin setuptools to avoid pkg_resources deprecation warnings from perth package
+setuptools<81
+
 # For Apple Silicon Macs - install PyTorch first
 torch>=2.0.0
 torchaudio>=2.0.0
+
+# System monitoring and performance tracking
+psutil>=5.9.0
+
+# Audio processing and analysis
+numpy>=1.24.0
 
 # Note: chatterbox-tts may need to be installed separately or may not be compatible with Python 3.13
 # We'll provide an alternative TTS solution

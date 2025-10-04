@@ -59,20 +59,28 @@ npm install
 ./setup_chatterbox.sh
 ./setup_metal_pytorch.sh
 
-# Start the TTS server
-./start-tts-server.sh
+# Start the new modular TTS server
+npm run server:start              # Start on default port 8000 (uses start-server.sh)
+# OR
+./start-server.sh                 # Direct shell script execution
+# OR  
+npm run server:dev                # Debug mode with enhanced logging
 ```
 
 ### 3. Generate Your First Podcast
 ```bash
-# Create sample content
+# Create sample content  
 echo "Welcome to my podcast about artificial intelligence and machine learning." > sample.txt
 
-# Generate podcast with default masculine voice
+# Generate podcast with TypeScript client
+npm run build                     # Build TypeScript client
 node dist/index.js generate -f sample.txt -o my-podcast.mp3
 
-# Or use the convenience script
-./generate-podcast.sh sample.txt my-podcast.mp3
+# Test server directly with curl
+curl -X POST "http://localhost:8000/synthesize-mp3" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world", "voice_preset": "masculine"}' \
+  -o test-audio.mp3
 ```
 
 ## 🎯 Usage
@@ -120,7 +128,12 @@ node dist/index.js generate \
 ./generate-podcast.sh input.txt output.mp3
 
 # Start TTS server
-./start-tts-server.sh
+```bash
+# Start TTS server (choose one)
+./start-chatterbox.sh              # Bash script
+npm run chatterbox:start           # npm script (bash)
+npm run chatterbox:start-js        # npm script (Node.js)
+```
 ```
 
 ### Configuration Parameters
@@ -166,6 +179,93 @@ node dist/index.js voices
 pip install aiohttp
 python tmp/scripts/test_voice_presets.py
 ```
+
+## 🖥️ Chatterbox Server Management
+
+The project includes comprehensive tools for managing the Chatterbox TTS server:
+
+### Server Starter Scripts
+
+#### Bash Script (Recommended for macOS/Linux)
+```bash
+# Start server with default settings
+./start-chatterbox.sh
+
+# Start on different port
+./start-chatterbox.sh --port 8001
+
+# Start on localhost only
+./start-chatterbox.sh --host 127.0.0.1
+
+# Check environment without starting
+./start-chatterbox.sh --check
+
+# Get help
+./start-chatterbox.sh --help
+```
+
+#### Node.js Script (Cross-Platform)
+```bash
+# Start server (works on Windows/macOS/Linux)
+node start-chatterbox.js
+
+# With custom configuration
+node start-chatterbox.js --port 8001 --host 0.0.0.0
+
+# Environment check
+node start-chatterbox.js --check
+
+# Help
+node start-chatterbox.js --help
+```
+
+### NPM Scripts
+```bash
+# TTS Server Management (New Modular Architecture)
+npm run server:start           # Start modular TTS server (default port 8000)
+npm run server:start-port 8080 # Start server on custom port
+npm run server:dev             # Start server in debug mode with hot reload
+npm run server:help            # Show server command help
+
+# Server Health & Testing
+npm run server:health          # Check server health status
+npm run server:voices          # List available voice presets
+npm run server:test            # Test server readiness
+
+# Setup Scripts  
+npm run setup:chatterbox       # Initial Chatterbox TTS setup
+npm run setup:metal           # Metal PyTorch optimization for Apple Silicon
+
+# Development Workflow
+npm run dev                   # Start both TTS server and TypeScript client
+
+# TypeScript Client Commands
+npm run tts:status            # Check TTS service status via TypeScript client  
+npm run tts:voices            # List voice presets via TypeScript client
+```
+
+### Environment Configuration
+
+Both starter scripts support environment variables:
+
+```bash
+# Server configuration
+export CHATTERBOX_HOST="0.0.0.0"      # Server host (default: 0.0.0.0)
+export CHATTERBOX_PORT="8000"         # Server port (default: 8000)
+export CHATTERBOX_LOG_LEVEL="info"    # Log level (default: info)
+
+# Start server with environment settings
+./start-chatterbox.sh
+```
+
+### Server Features
+
+- **Automatic Environment Checks** - Validates Python environment and dependencies
+- **Port Conflict Detection** - Warns about port usage conflicts
+- **Health Monitoring** - Checks service availability before starting
+- **Graceful Shutdown** - Proper cleanup on Ctrl+C termination
+- **Cross-Platform Support** - Both bash and Node.js implementations
+- **Comprehensive Logging** - Colored output with informative messages
 
 ## 📁 Project Structure
 

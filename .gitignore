@@ -4,5 +4,12 @@ dist
 tmp/**
 !tmp/.gitkeep
 __pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+.pytest_cache
 *.mp3
 *.txt

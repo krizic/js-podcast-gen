@@ -1,6 +1,6 @@
 {
   "name": "js-podcast-gen",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "bin": {
     "podcast-gen": "./dist/index.js"
@@ -8,20 +8,34 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server:start": "./start-server.sh",
+    "server:start-port": "./start-server.sh --port",
+    "server:dev": "./start-server.sh --debug",
+    "server:help": "./start-server.sh --help",
+    "server:health": "curl -s http://localhost:8000/health | python -m json.tool",
+    "server:voices": "curl -s http://localhost:8000/voices | python -m json.tool",
+    "server:test": "curl -s http://localhost:8000/test | python -m json.tool",
+    "setup:chatterbox": "./setup_chatterbox.sh",
+    "setup:metal": "./setup_metal_pytorch.sh",
+    "dev": "concurrently \"./start-server.sh\" \"npm run start\"",
+    "tts:status": "tsx src/index.ts status",
+    "tts:voices": "tsx src/index.ts voices"
   },
   "keywords": ["podcast", "tts", "ai", "ollama", "chatterbox", "audio", "speech-synthesis", "apple-silicon"],
   "author": "js-podcast-gen contributors",
   "license": "MIT",
-  "description": "A professional podcast generation tool featuring clean modular architecture, Apple Silicon optimization, and intelligent voice customization.",
+  "description": "Professional podcast generation with modular TTS server architecture, Apple Silicon MPS acceleration, and intelligent voice presets. Features TypeScript client and Python FastAPI server.",
   "devDependencies": {
-    "@types/node": "^20.12.12",
+    "@types/node": "^24.6.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.9.3",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.6"
   },
   "dependencies": {
-    "commander": "^12.1.0",
-    "ollama": "^0.5.0",
+    "commander": "^14.0.1",
+    "ollama": "^0.6.0",
     "wavefile": "^11.0.0"
   }
 }

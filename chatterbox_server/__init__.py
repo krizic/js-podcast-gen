@@ -1,10 +1,6 @@
 """
-"""
-🎙️ Chatterbox TTS Server Package
-
-This package provides a modular, professional TTS server implementation
-with FastAPI, comprehensive logging, and Apple Silicon optimization.
-"""
+# Chatterbox TTS Server Package
+# Modular, professional TTS server implementation
 
 from .main import main
 

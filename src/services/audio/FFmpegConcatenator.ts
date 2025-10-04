@@ -51,25 +51,36 @@ export class FFmpegConcatenator implements IAudioProcessor {
   async concatenate(segmentPaths: string[], outputPath: string): Promise<void> {
     this.logger.info(`Concatenating ${segmentPaths.length} audio segments with ffmpeg`);
     
+    // Use simpler file-based concatenation for better reliability
+    const concatListFile = FileUtils.getTempFilePath(`concat_list_${Date.now()}.txt`, 'audio/segments');
+    const concatContent = segmentPaths.map(path => `file '${path.replace(/'/g, "'\\''")}'`).join('\n');
+    
+    // Write concat file list
+    const fs = await import('fs/promises');
+    await fs.writeFile(concatListFile, concatContent);
+    
+    const ffmpegArgs = [
+      '-f', 'concat',
+      '-safe', '0',
+      '-i', concatListFile,
+      '-ar', '24000', // Ensure consistent sample rate (24kHz from ChatterboxTTS)
+      '-ac', '1',     // Mono audio
+      '-c:a', 'libmp3lame', // Use LAME MP3 encoder for best quality
+      '-b:a', '128k', // Audio bitrate for MP3
+      '-y', // Overwrite output file
+      outputPath
+    ];
+    
+    // Clean up concat file after use
+    const cleanupConcatFile = async () => {
+      try {
+        await fs.unlink(concatListFile);
+      } catch (error) {
+        this.logger.warn(`Failed to cleanup concat file: ${concatListFile}`);
+      }
+    };
+    
     return new Promise((resolve, reject) => {
-      // Create ffmpeg command for concatenation
-      const inputArgs: string[] = [];
-      const filterParts: string[] = [];
-      
-      segmentPaths.forEach((segmentPath, index) => {
-        inputArgs.push('-i', segmentPath);
-        filterParts.push(`[${index}:0]`);
-      });
-      
-      const filterComplex = `${filterParts.join('')}concat=n=${segmentPaths.length}:v=0:a=1[out]`;
-      
-      const ffmpegArgs = [
-        ...inputArgs,
-        '-filter_complex', filterComplex,
-        '-map', '[out]',
-        '-y', // Overwrite output file
-        outputPath
-      ];
       
       this.logger.debug('Running ffmpeg with args:', ffmpegArgs);
       
@@ -81,7 +92,9 @@ export class FFmpegConcatenator implements IAudioProcessor {
         stderr += data.toString();
       });
       
-      ffmpeg.on('close', (code) => {
+      ffmpeg.on('close', async (code) => {
+        await cleanupConcatFile(); // Clean up concat file
+        
         if (code === 0) {
           this.logger.info(`Successfully concatenated ${segmentPaths.length} segments into ${outputPath}`);
           resolve();
@@ -94,7 +107,9 @@ export class FFmpegConcatenator implements IAudioProcessor {
         }
       });
       
-      ffmpeg.on('error', (error) => {
+      ffmpeg.on('error', async (error) => {
+        await cleanupConcatFile(); // Clean up concat file on error too
+        
         this.logger.error('FFmpeg process error', error);
         reject(new AudioProcessingError(
           `FFmpeg process error: ${error.message}`,

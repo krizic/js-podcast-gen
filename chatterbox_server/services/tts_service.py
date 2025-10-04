@@ -219,7 +219,73 @@ class AudioProcessor:
         if peak_amplitude == 0:
             raise ValueError("🚫 Generated audio is silent")
         
+        # Trim silence from beginning and end
+        wav_tensor = self._trim_silence(wav_tensor)
+        
         return wav_tensor
+    
+    def _trim_silence(self, wav_tensor: torch.Tensor, threshold: float = 0.01) -> torch.Tensor:
+        """
+        Trim silence from the beginning and end of audio tensor.
+        
+        Args:
+            wav_tensor: Audio tensor to trim
+            threshold: RMS threshold below which audio is considered silence
+            
+        Returns:
+            Trimmed audio tensor
+        """
+        if wav_tensor.shape[1] == 0:
+            return wav_tensor
+            
+        # Calculate RMS for each frame (using 1024 sample windows)
+        frame_size = 1024
+        audio_data = wav_tensor[0]  # Get first channel
+        
+        # Calculate RMS values for overlapping windows
+        rms_values = []
+        for i in range(0, len(audio_data) - frame_size, frame_size // 4):
+            frame = audio_data[i:i + frame_size]
+            rms = torch.sqrt(torch.mean(frame ** 2)).item()
+            rms_values.append(rms)
+        
+        if not rms_values:
+            return wav_tensor
+            
+        # Find start and end of non-silent audio
+        start_frame = 0
+        end_frame = len(rms_values) - 1
+        
+        # Find first non-silent frame
+        for i, rms in enumerate(rms_values):
+            if rms > threshold:
+                start_frame = i
+                break
+        
+        # Find last non-silent frame  
+        for i in range(len(rms_values) - 1, -1, -1):
+            if rms_values[i] > threshold:
+                end_frame = i
+                break
+        
+        # Convert frame indices back to sample indices
+        start_sample = start_frame * (frame_size // 4)
+        end_sample = min((end_frame + 1) * (frame_size // 4) + frame_size, wav_tensor.shape[1])
+        
+        # Add small padding to avoid cutting off too aggressively
+        padding = int(0.1 * self.model_manager.model.sr)  # 100ms padding
+        start_sample = max(0, start_sample - padding)
+        end_sample = min(wav_tensor.shape[1], end_sample + padding)
+        
+        # Trim the tensor
+        trimmed = wav_tensor[:, start_sample:end_sample]
+        
+        original_duration = wav_tensor.shape[1] / self.model_manager.model.sr
+        trimmed_duration = trimmed.shape[1] / self.model_manager.model.sr
+        
+        self.logger.info(f"🎵 Silence trimmed: {original_duration:.2f}s → {trimmed_duration:.2f}s")
+        
+        return trimmed
     
     def analyze_audio(self, wav_tensor: torch.Tensor) -> Dict[str, Any]:
         """

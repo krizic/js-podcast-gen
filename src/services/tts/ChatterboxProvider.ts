@@ -51,7 +51,8 @@ export class ChatterboxProvider implements ITTSProvider {
         ...config
       };
 
-      const response = await fetch(`${this.serverURL}/synthesize`, {
+      // Use direct WAV endpoint for proper audio format
+      const response = await fetch(`${this.serverURL}/synthesize-wav`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,24 +67,17 @@ export class ChatterboxProvider implements ITTSProvider {
         );
       }
 
-      const result: TTSResponse = await response.json();
+      // Response is direct WAV binary data
+      const audioBuffer = Buffer.from(await response.arrayBuffer());
       
-      if (!result.success || !result.audio) {
+      if (audioBuffer.length === 0) {
         throw new TTSError(
           'No audio data returned from TTS server',
           'NO_AUDIO_DATA'
         );
       }
 
-      // Log voice parameters used (helpful for debugging)
-      if (result.voice_params) {
-        this.logger.info(
-          `🎙️  Voice: ${result.voice_params.voice_preset || 'default'} (temp=${result.voice_params.temperature || 'auto'})`
-        );
-      }
-
-      // Decode the base64 audio data
-      const audioBuffer = Buffer.from(result.audio, 'base64');
+      this.logger.info(`🎙️ Generated WAV audio (${audioBuffer.length} bytes)`);
       this.logger.debug('Speech synthesis completed', { audioSize: audioBuffer.length });
       
       return audioBuffer;

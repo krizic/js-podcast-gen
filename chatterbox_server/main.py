@@ -149,6 +149,28 @@ class ChatterboxServer:
             self.tts_controller.synthesize_mp3
         )
         
+        # OpenAI-compatible endpoints with voice upload support
+        self.app.post("/v1/audio/speech", summary="🌍 OpenAI-Compatible Speech Generation")(
+            self.tts_controller.openai_speech_endpoint
+        )
+        
+        self.app.post("/v1/audio/speech/upload", summary="📤 OpenAI-Compatible Speech with Voice Upload")(
+            self.tts_controller.openai_speech_upload_endpoint
+        )
+        
+        # Voice Library Management endpoints
+        self.app.get("/voices", summary="📋 List Voice Library")(
+            self.system_controller.get_voice_library
+        )
+        
+        self.app.post("/voices", summary="📤 Upload Voice to Library")(
+            self.tts_controller.upload_voice_to_library
+        )
+        
+        self.app.delete("/voices/{voice_name}", summary="🗑️ Delete Voice from Library")(
+            self.tts_controller.delete_voice_from_library
+        )
+        
         # System information endpoints  
         self.app.get("/health", summary="💚 Health Check")(
             self.system_controller.get_health_check

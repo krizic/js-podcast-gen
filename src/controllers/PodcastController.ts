@@ -1,4 +1,4 @@
-import { PodcastOptions } from '../interfaces/types.js';
+import { PodcastOptions, VoiceConfig } from '../interfaces/types.js';
 import { TTSService } from '../services/tts/TTSService.js';
 import { LLMService } from '../services/llm/LLMService.js';
 import { AudioService } from '../services/audio/AudioService.js';
@@ -37,14 +37,14 @@ export class PodcastController {
     const audioService = this.serviceFactory.createAudioService();
 
     // Build voice configuration
-    const voiceConfig = ConfigUtils.mergeVoiceConfig({
+        const voiceConfig: VoiceConfig = {
       voice_preset: options.voice,
       exaggeration: options.exaggeration,
-      cfg_scale: options.cfgScale,
+      cfg_weight: options.cfgScale,
       temperature: options.temperature,
       top_p: options.topP,
-      top_k: options.topK,
-    });
+      top_k: options.topK
+    };
 
     this.logger.info(`🎙️  Voice preset: ${voiceConfig.voice_preset}`);
 
@@ -117,7 +117,7 @@ export class PodcastController {
     // Validate numeric parameters
     const numericValidations = [
       ValidationUtils.validateNumericParameter(options.exaggeration, 'exaggeration', 0, 1),
-      ValidationUtils.validateNumericParameter(options.cfgScale, 'cfg_scale', 0, 1),
+      ValidationUtils.validateNumericParameter(options.cfgScale, 'cfg_weight', 0, 1),
       ValidationUtils.validateNumericParameter(options.temperature, 'temperature', 0, 1),
       ValidationUtils.validateNumericParameter(options.topP, 'top_p', 0, 1),
       ValidationUtils.validateNumericParameter(options.topK, 'top_k', 1),
@@ -176,9 +176,15 @@ export class PodcastController {
   private async convertScriptToAudio(script: string, voiceConfig: any, ttsService: TTSService): Promise<Buffer[]> {
     const appSettings = ConfigUtils.getAppSettings();
     
-    // Split script into segments
-    const segments = ttsService.splitIntoSegments(script, appSettings.maxSegmentLength);
-    
+      // Server-side streaming-optimized chunking handles text segmentation
+      this.logger.info('Using server-side streaming-optimized chunking to prevent audio padding');
+      
+      // Create single segment - server will handle chunking internally
+      const segments = [{
+        text: script,
+        index: 0
+      }];
+
     // Process segments into audio
     const audioBuffers = await ttsService.processSegments(
       segments, 

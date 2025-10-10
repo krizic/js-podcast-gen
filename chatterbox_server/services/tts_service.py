@@ -22,6 +22,7 @@ from chatterbox_server.models.tts_models import TTSRequest
 from chatterbox_server.config.voice_config import VOICE_PRESETS, get_voice_preset
 from chatterbox_server.utilities.device_utils import get_optimal_device, clear_device_cache
 from chatterbox_server.utilities.logging_utils import setup_logger
+from chatterbox_server.utilities.text_processing import split_text_for_streaming, get_streaming_settings
 
 
 class TTSModelManager:
@@ -219,73 +220,7 @@ class AudioProcessor:
         if peak_amplitude == 0:
             raise ValueError("🚫 Generated audio is silent")
         
-        # Trim silence from beginning and end
-        wav_tensor = self._trim_silence(wav_tensor)
-        
         return wav_tensor
-    
-    def _trim_silence(self, wav_tensor: torch.Tensor, threshold: float = 0.01) -> torch.Tensor:
-        """
-        Trim silence from the beginning and end of audio tensor.
-        
-        Args:
-            wav_tensor: Audio tensor to trim
-            threshold: RMS threshold below which audio is considered silence
-            
-        Returns:
-            Trimmed audio tensor
-        """
-        if wav_tensor.shape[1] == 0:
-            return wav_tensor
-            
-        # Calculate RMS for each frame (using 1024 sample windows)
-        frame_size = 1024
-        audio_data = wav_tensor[0]  # Get first channel
-        
-        # Calculate RMS values for overlapping windows
-        rms_values = []
-        for i in range(0, len(audio_data) - frame_size, frame_size // 4):
-            frame = audio_data[i:i + frame_size]
-            rms = torch.sqrt(torch.mean(frame ** 2)).item()
-            rms_values.append(rms)
-        
-        if not rms_values:
-            return wav_tensor
-            
-        # Find start and end of non-silent audio
-        start_frame = 0
-        end_frame = len(rms_values) - 1
-        
-        # Find first non-silent frame
-        for i, rms in enumerate(rms_values):
-            if rms > threshold:
-                start_frame = i
-                break
-        
-        # Find last non-silent frame  
-        for i in range(len(rms_values) - 1, -1, -1):
-            if rms_values[i] > threshold:
-                end_frame = i
-                break
-        
-        # Convert frame indices back to sample indices
-        start_sample = start_frame * (frame_size // 4)
-        end_sample = min((end_frame + 1) * (frame_size // 4) + frame_size, wav_tensor.shape[1])
-        
-        # Add small padding to avoid cutting off too aggressively
-        padding = int(0.1 * self.model_manager.model.sr)  # 100ms padding
-        start_sample = max(0, start_sample - padding)
-        end_sample = min(wav_tensor.shape[1], end_sample + padding)
-        
-        # Trim the tensor
-        trimmed = wav_tensor[:, start_sample:end_sample]
-        
-        original_duration = wav_tensor.shape[1] / self.model_manager.model.sr
-        trimmed_duration = trimmed.shape[1] / self.model_manager.model.sr
-        
-        self.logger.info(f"🎵 Silence trimmed: {original_duration:.2f}s → {trimmed_duration:.2f}s")
-        
-        return trimmed
     
     def analyze_audio(self, wav_tensor: torch.Tensor) -> Dict[str, Any]:
         """
@@ -464,14 +399,88 @@ class TTSSynthesisService:
         
         self.logger.info(f"🎵 Synthesis #{request_id}: \"{request.text[:80]}{'...' if len(request.text) > 80 else ''}\"")
         
-        # Generate audio
-        wav_tensor = self.audio_processor.generate_audio(
-            text=request.text,
-            voice_params=final_params,
-            audio_prompt_path=request.audio_prompt_path
-        )
+        # Use streaming-optimized chunking for longer texts to prevent fixed-duration padding
+        MAX_SINGLE_CHUNK_LENGTH = 200  # Balanced quality default from reference repository
+        
+        if len(request.text) <= MAX_SINGLE_CHUNK_LENGTH:
+            # Short text - generate directly
+            self.logger.info(f"🎯 Direct synthesis (text length: {len(request.text)} chars)")
+            wav_tensor = self.audio_processor.generate_audio(
+                text=request.text,
+                voice_params=final_params,
+                audio_prompt_path=request.audio_prompt_path
+            )
+        else:
+            # Long text - use streaming-optimized chunking to prevent padding
+            self.logger.info(f"📝 Using streaming-optimized chunking (text length: {len(request.text)} chars)")
+            wav_tensor = self._generate_chunked_audio(
+                request.text, 
+                final_params, 
+                request.audio_prompt_path,
+                chunk_size=request.streaming_chunk_size,
+                strategy=request.streaming_strategy,
+                quality=request.streaming_quality
+            )
         
         # Analyze audio quality
         analysis = self.audio_processor.analyze_audio(wav_tensor)
         
         return wav_tensor, analysis, request_id
+    
+    def _generate_chunked_audio(
+        self, 
+        text: str, 
+        voice_params: Dict[str, Any],
+        audio_prompt_path: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        strategy: Optional[str] = None,
+        quality: Optional[str] = None
+    ) -> torch.Tensor:
+        """
+        Generate audio using streaming-optimized chunking to prevent fixed-duration padding.
+        
+        Args:
+            text: Text to synthesize
+            voice_params: Voice parameter configuration
+            audio_prompt_path: Optional path to audio prompt for voice cloning
+            chunk_size: Optional override for chunk size
+            strategy: Optional override for chunking strategy
+            quality: Quality preset (fast/balanced/high)
+            
+        Returns:
+            Concatenated audio tensor from all chunks
+        """
+        # Use streaming settings matching reference repository
+        chunks = split_text_for_streaming(
+            text, 
+            chunk_size=chunk_size,
+            strategy=strategy,
+            quality=quality or "balanced"  # Default to balanced quality
+        )
+        
+        self.logger.info(f"📝 Split into {len(chunks)} streaming-optimized chunks")
+        for i, chunk in enumerate(chunks, 1):
+            self.logger.debug(f"  Chunk {i}: ({len(chunk)} chars) \"{chunk[:50]}{'...' if len(chunk) > 50 else ''}\"")
+        
+        # Generate audio for each chunk
+        audio_chunks = []
+        for i, chunk in enumerate(chunks):
+            self.logger.info(f"🎙️ Generating chunk {i+1}/{len(chunks)} ({len(chunk)} chars)")
+            
+            chunk_audio = self.audio_processor.generate_audio(
+                text=chunk,
+                voice_params=voice_params,
+                audio_prompt_path=audio_prompt_path
+            )
+            
+            audio_chunks.append(chunk_audio)
+        
+        # Concatenate all chunks
+        if len(audio_chunks) == 1:
+            return audio_chunks[0]
+        
+        self.logger.info("🔗 Concatenating audio chunks...")
+        concatenated = torch.cat(audio_chunks, dim=-1)
+        
+        self.logger.info(f"✅ Chunked synthesis complete: {len(chunks)} chunks → {concatenated.shape[-1]} samples")
+        return concatenated

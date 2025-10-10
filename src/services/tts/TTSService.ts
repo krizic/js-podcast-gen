@@ -50,59 +50,69 @@ export class TTSService {
   }
 
   /**
-   * Split long text into manageable segments for TTS processing
+   * Split text into chunks respecting server's character limit
+   * Uses sentence boundaries for natural-sounding splits
    */
-  splitIntoSegments(text: string, maxLength: number = 600): AudioSegment[] {
-    this.logger.debug(`Splitting text into segments (max length: ${maxLength})`);
+  splitTextIntoChunks(text: string, maxChars: number = 1800): string[] {
+    // Use 1800 to have buffer below 2000 char server limit
+    const chunks: string[] = [];
     
-    // First try splitting by double newlines (paragraphs)
-    let segments = text.split(/\n\s*\n/).filter(segment => segment.trim().length > 0);
+    // Split by sentences (periods, exclamation marks, question marks followed by space or end)
+    const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)/g) || [text];
     
-    // If segments are still too long, split them further
-    const finalSegments: AudioSegment[] = [];
-    let segmentIndex = 0;
+    let currentChunk = '';
     
-    for (const segment of segments) {
-      if (segment.length <= maxLength) {
-        finalSegments.push({
-          text: segment.trim(),
-          index: segmentIndex++
-        });
-      } else {
-        // Split long segments at sentence boundaries
-        const sentences = segment.split(/(?<=[.!?])\s+/);
-        let currentSegment = '';
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim();
+      
+      // If single sentence exceeds limit, split by commas or words
+      if (trimmedSentence.length > maxChars) {
+        if (currentChunk) {
+          chunks.push(currentChunk.trim());
+          currentChunk = '';
+        }
         
-        for (const sentence of sentences) {
-          if (currentSegment.length + sentence.length + 1 <= maxLength) {
-            currentSegment += (currentSegment ? ' ' : '') + sentence;
-          } else {
-            if (currentSegment) {
-              finalSegments.push({
-                text: currentSegment.trim(),
-                index: segmentIndex++
-              });
+        // Split long sentence by commas
+        const parts = trimmedSentence.split(/,\s+/);
+        let longChunk = '';
+        
+        for (const part of parts) {
+          if ((longChunk + part).length > maxChars) {
+            if (longChunk) {
+              chunks.push(longChunk.trim());
             }
-            currentSegment = sentence;
+            longChunk = part;
+          } else {
+            longChunk += (longChunk ? ', ' : '') + part;
           }
         }
         
-        // Add remaining content
-        if (currentSegment.trim()) {
-          finalSegments.push({
-            text: currentSegment.trim(),
-            index: segmentIndex++
-          });
+        if (longChunk) {
+          currentChunk = longChunk;
         }
+      } else if ((currentChunk + trimmedSentence).length > maxChars) {
+        // Current chunk would exceed limit, save it and start new one
+        if (currentChunk) {
+          chunks.push(currentChunk.trim());
+        }
+        currentChunk = trimmedSentence;
+      } else {
+        // Add sentence to current chunk
+        currentChunk += (currentChunk ? ' ' : '') + trimmedSentence;
       }
     }
-
-    this.logger.info(`Text split into ${finalSegments.length} segments`);
-    return finalSegments;
+    
+    // Add remaining chunk
+    if (currentChunk) {
+      chunks.push(currentChunk.trim());
+    }
+    
+    return chunks;
   }
 
   /**
    * Process multiple text segments into audio buffers
+   * Automatically chunks text if segments exceed server limits
    */
   async processSegments(
     segments: AudioSegment[], 
@@ -117,16 +127,28 @@ export class TTSService {
       const segment = segments[i];
       
       try {
-        this.logger.info(`Processing segment ${i + 1}/${segments.length} (${segment.text.length} chars)`);
+        // Check if segment needs chunking (server has 2000 char limit)
+        const chunks = segment.text.length > 1800 
+          ? this.splitTextIntoChunks(segment.text, 1800)
+          : [segment.text];
         
-        const audioBuffer = await this.generateSpeech(segment.text, voiceConfig);
-        audioBuffers.push(audioBuffer);
+        if (chunks.length > 1) {
+          this.logger.info(`Segment ${i + 1}/${segments.length} split into ${chunks.length} chunks`);
+        }
         
-        this.logger.info(`Segment ${i + 1} processed successfully (${audioBuffer.length} bytes)`);
-        
-        // Add delay between requests to be nice to the server
-        if (i < segments.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayBetweenRequests));
+        for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+          const chunk = chunks[chunkIndex];
+          this.logger.info(`Processing segment ${i + 1}/${segments.length}, chunk ${chunkIndex + 1}/${chunks.length} (${chunk.length} chars)`);
+          
+          const audioBuffer = await this.generateSpeech(chunk, voiceConfig);
+          audioBuffers.push(audioBuffer);
+          
+          this.logger.info(`Chunk processed successfully (${audioBuffer.length} bytes)`);
+          
+          // Add delay between requests
+          if (i < segments.length - 1 || chunkIndex < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, delayBetweenRequests));
+          }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -139,7 +161,7 @@ export class TTSService {
       throw new Error('No audio data was generated from any segments');
     }
 
-    this.logger.info(`Successfully processed ${audioBuffers.length}/${segments.length} segments`);
+    this.logger.info(`Successfully processed ${audioBuffers.length} total audio chunks`);
     return audioBuffers;
   }
 

@@ -46,9 +46,8 @@ class TTSRequest(BaseModel):
     
     text: str = Field(
         ..., 
-        description="Text to synthesize (required)", 
-        min_length=1, 
-        max_length=2000,
+        description="Text to synthesize (required). Server handles chunking for long texts.", 
+        min_length=1,
         example="Hello, this is a test of the Chatterbox TTS system."
     )
     
@@ -111,6 +110,27 @@ class TTSRequest(BaseModel):
         ge=0.0, 
         le=1.0,
         example=0.35
+    )
+    
+    # Streaming optimization parameters (matching reference repository)
+    streaming_chunk_size: Optional[int] = Field(
+        None,
+        description="Characters per streaming chunk (50-500)",
+        ge=50,
+        le=500,
+        example=200
+    )
+    
+    streaming_strategy: Optional[str] = Field(
+        default="sentence",
+        description="Chunking strategy for streaming synthesis",
+        pattern="^(sentence|paragraph|fixed|word)$",
+    )
+    
+    streaming_quality: Optional[str] = Field(
+        default="balanced", 
+        description="Quality preset for streaming synthesis",
+        pattern="^(fast|balanced|high)$",
     )
 
 

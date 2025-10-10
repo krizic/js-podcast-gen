@@ -3,16 +3,49 @@
 export interface VoiceConfig {
   voice_preset?: string;
   exaggeration?: number;
-  cfg_scale?: number;
+  cfg_weight?: number;  // Updated to match reference repository naming
   temperature?: number;
   top_p?: number;
+  min_p?: number;       // Added to match reference repository
+  repetition_penalty?: number;  // Added to match reference repository
   top_k?: number;
 }
 
 export interface TTSResponse {
   success: boolean;
   audio?: string; // Base64 encoded audio
-  voice_params?: VoiceConfig;
+  sample_rate?: number;
+  format?: string;
+  synthesis_info?: {
+    request_id: string;
+    text_length: number;
+    voice_preset: string;
+    preset_description: string;
+    use_case: string;
+    personality: string;
+    audio_prompt_used: boolean;
+  };
+  performance_metrics?: {
+    total_time_seconds: number;
+    generation_time_seconds: number;
+    chars_per_second: number;
+    realtime_factor: number;
+    memory_usage_before: number;
+    memory_usage_after: number;
+    device_used: string;
+  };
+  voice_characteristics?: VoiceConfig;
+  audio_analysis?: {
+    duration_seconds: number;
+    sample_rate: number;
+    channels: number;
+    samples: number;
+    peak_amplitude: number;
+    rms_level: number;
+    dynamic_range_db: number;
+    file_size_bytes: number;
+    compression_ratio: number;
+  };
   error?: string;
 }
 

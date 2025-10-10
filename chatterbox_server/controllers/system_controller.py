@@ -9,6 +9,8 @@ import time
 from typing import Dict, Any
 from fastapi import HTTPException
 
+import json
+from pathlib import Path
 from chatterbox_server.services.performance_service import performance_tracker
 from chatterbox_server.services.tts_service import TTSModelManager
 from chatterbox_server.config.voice_config import VOICE_PRESETS, SERVER_CONFIG
@@ -182,6 +184,66 @@ class SystemController:
             "model_info": self.model_manager.get_model_info(),
             "efficiency_metrics": performance_tracker.get_efficiency_metrics()
         }
+    
+    def get_voice_library(self) -> Dict[str, Any]:
+        """
+        📋 Get voice library information including presets and custom voices
+        
+        Returns:
+            Dictionary containing voice presets and custom voice library
+        """
+        try:
+            self.logger.info("📋 Fetching voice library information")
+            
+            # Get built-in voice presets
+            presets_info = {}
+            for preset_name, preset_config in VOICE_PRESETS.items():
+                presets_info[preset_name] = {
+                    "type": "preset",
+                    "name": preset_name,
+                    "description": preset_config["description"],
+                    "personality": preset_config["personality"],
+                    "use_case": preset_config["use_case"],
+                    "parameters": {
+                        "temperature": preset_config["temperature"],
+                        "exaggeration": preset_config["exaggeration"],
+                        "cfg_weight": preset_config["cfg_weight"]
+                    }
+                }
+            
+            # Get custom voices from library
+            custom_voices = {}
+            voices_dir = Path("voices")
+            
+            if voices_dir.exists():
+                for metadata_file in voices_dir.glob("*.json"):
+                    try:
+                        with open(metadata_file, "r") as f:
+                            voice_data = json.load(f)
+                            voice_data["type"] = "custom"
+                            custom_voices[voice_data["safe_name"]] = voice_data
+                    except Exception as e:
+                        self.logger.warning(f"⚠️ Failed to load voice metadata from {metadata_file}: {e}")
+            
+            library_info = {
+                "total_voices": len(presets_info) + len(custom_voices),
+                "presets": presets_info,
+                "custom_voices": custom_voices,
+                "voice_library_path": str(voices_dir.absolute()) if voices_dir.exists() else None,
+                "supported_formats": [".wav", ".mp3", ".flac", ".m4a", ".ogg"],
+                "usage": {
+                    "presets": "Use 'voice_preset' parameter in synthesis requests",
+                    "custom_voices": "Upload via POST /voices, then use 'audio_prompt_path' parameter",
+                    "upload_endpoint": "POST /voices with form data (voice_name, voice_file, language, description)"
+                }
+            }
+            
+            self.logger.info(f"📋 Voice library: {len(presets_info)} presets, {len(custom_voices)} custom voices")
+            return library_info
+            
+        except Exception as e:
+            self.logger.error(f"💥 Failed to fetch voice library: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"🚫 Failed to fetch voice library: {str(e)}")
     
     def get_test_endpoint(self) -> Dict[str, Any]:
         """

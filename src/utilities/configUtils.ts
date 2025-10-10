@@ -1,20 +1,43 @@
 import { VoiceConfig } from '../interfaces/types.js';
 
 /**
- * Configuration management utility following SRP
- * Handles all application configuration concerns
+ * Configuration Management Utility
+ * 
+ * Centralized configuration management for the podcast generation system.
+ * Handles environment variables, defaults, and configuration validation.
+ * Follows Single Responsibility Principle - only handles configuration concerns.
+ * 
+ * @example
+ * ```typescript
+ * const ttsUrl = ConfigUtils.getTTSServerURL();
+ * const voiceConfig = ConfigUtils.getDefaultVoiceConfig();
+ * ```
  */
 export class ConfigUtils {
   
   /**
-   * Get TTS server URL from environment or default
+   * Get TTS server URL from environment or use default
+   * 
+   * @returns {string} TTS server URL (default: http://localhost:8000)
+   * @example
+   * ```typescript
+   * const serverUrl = ConfigUtils.getTTSServerURL(); // 'http://localhost:8000'
+   * ```
    */
   static getTTSServerURL(): string {
     return process.env.TTS_SERVER_URL || 'http://localhost:8000';
   }
 
   /**
-   * Get Ollama server configuration
+   * Get Ollama LLM server configuration
+   * 
+   * @param {string} [customUrl] - Optional custom Ollama server URL
+   * @param {string} [customModel] - Optional custom model name
+   * @returns {{ host: string; model: string }} Ollama configuration
+   * @example
+   * ```typescript
+   * const config = ConfigUtils.getOllamaConfig('http://localhost:11434', 'llama2');
+   * ```
    */
   static getOllamaConfig(customUrl?: string, customModel?: string): { host: string; model: string } {
     return {
@@ -24,18 +47,33 @@ export class ConfigUtils {
   }
 
   /**
-   * Get default voice configuration
+   * Get default voice configuration with balanced parameters
+   * 
+   * @returns {VoiceConfig} Default voice configuration (masculine preset)
+   * @example
+   * ```typescript
+   * const defaults = ConfigUtils.getDefaultVoiceConfig();
+   * // { voice_preset: 'masculine', exaggeration: 0.3, cfg_weight: 0.4 }
+   * ```
    */
   static getDefaultVoiceConfig(): VoiceConfig {
     return {
       voice_preset: 'masculine',
       exaggeration: 0.3,
-      cfg_scale: 0.4
+      cfg_weight: 0.4
     };
   }
 
   /**
-   * Merge user voice config with defaults
+   * Merge user voice configuration with defaults
+   * 
+   * @param {Partial<VoiceConfig>} userConfig - Partial user configuration
+   * @returns {VoiceConfig} Complete configuration with defaults applied
+   * @example
+   * ```typescript
+   * const config = ConfigUtils.mergeVoiceConfig({ temperature: 0.7 });
+   * // Includes defaults for other parameters
+   * ```
    */
   static mergeVoiceConfig(userConfig: Partial<VoiceConfig>): VoiceConfig {
     return {
@@ -58,7 +96,7 @@ export class ConfigUtils {
       return false;
     }
 
-    if (config.cfg_scale !== undefined && (config.cfg_scale < 0 || config.cfg_scale > 1)) {
+    if (config.cfg_weight !== undefined && (config.cfg_weight < 0 || config.cfg_weight > 1)) {
       return false;
     }
 
